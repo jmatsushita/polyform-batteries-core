@@ -8,10 +8,7 @@ import Data.Number.Format (Format, toString, toStringWith) as Number.Format
 import Polyform.Batteries (Dual', Validator', error) as Batteries
 import Polyform.Dual (dual) as Dual
 import Polyform.Validator (liftFnMaybe) as Validator
-import Type.Proxy (Proxy(..))
 import Type.Row (type (+))
-
-_numberExpected = Proxy ∷ Proxy "numberExpected"
 
 type NumberExpected e
   = ( numberExpected ∷ String | e )
@@ -20,7 +17,7 @@ type NumberExpected e
 -- | module and use `purescript-formatters`
 -- | API there.
 validator ∷ ∀ e m. Monad m ⇒ Batteries.Validator' m (NumberExpected + e) String Number
-validator = Validator.liftFnMaybe (Batteries.error _numberExpected $ append "Expecting a number but got: ") Number.fromString
+validator = Validator.liftFnMaybe (Batteries.error @"numberExpected" $ append "Expecting a number but got: ") Number.fromString
 
 dual ∷ ∀ e m. Monad m ⇒ Maybe Number.Format.Format → Batteries.Dual' m (NumberExpected + e) String Number
 dual format =

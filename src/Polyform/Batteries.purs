@@ -28,7 +28,7 @@ import Polyform.Validator (Validator) as Polyform
 import Polyform.Validator.Dual (Dual) as Polyform.Validator.Dual
 import Prim.Row (class Cons) as Row
 import Type.Prelude (class IsSymbol)
-import Type.Proxy (Proxy)
+import Type.Proxy (Proxy(..))
 import Unsafe.Coerce (unsafeCoerce)
 
 -- | It seems that better usability is with this embeded default
@@ -40,20 +40,19 @@ import Unsafe.Coerce (unsafeCoerce)
 type Msg info
   = { msg ∷ Data.Lazy String, info ∷ Variant info }
 
-msg ∷ ∀ info l infos_ infos. IsSymbol l ⇒ Row.Cons l info infos_ infos ⇒ Data.Lazy String → Proxy l → info → Msg infos
-msg m l i = { msg: m, info: Variant.inj l i }
+msg ∷ ∀ info @l infos_ infos. IsSymbol l ⇒ Row.Cons l info infos_ infos ⇒ Data.Lazy String → info → Msg infos
+msg m i = { msg: m, info: Variant.inj @l i }
 
 msg' ::
-  ∀ t6 t7 t8 t9.
-  IsSymbol t8 ⇒
-  Row.Cons t8 t9 t7 t6 ⇒
+  ∀ t6 t7 @sym t9.
+  IsSymbol sym ⇒
+  Row.Cons sym t9 t7 t6 ⇒
   String →
-  Proxy t8 →
   t9 →
   { info ∷ Variant t6
   , msg ∷ Data.Lazy String
   }
-msg' m = msg (defer \_ → m)
+msg' m = msg @sym (defer \_ → m)
 
 -- | Do we want to migrate to this kind of error repr
 --   = Array ({ msg ∷ String, info ∷ Variant errs })
@@ -73,14 +72,14 @@ type Dual m errs i o = Polyform.Validator.Dual.Dual m (Errors errs) i o
 type Dual' m (errs :: Row Type) i o = Dual m (Msg errs) i o
 
 -- | Handy shortcuts to quickly build an error or the whole failure result
-error ∷ ∀ e errs l t. Row.Cons l e t errs ⇒ IsSymbol l ⇒ Proxy l → (e → String) → e → Errors' errs
-error l prt = Array.singleton <<< \e → msg (defer \_ → prt e) l e
+error ∷ ∀ e errs @l t. Row.Cons l e t errs ⇒ IsSymbol l ⇒ (e → String) → e → Errors' errs
+error prt = Array.singleton <<< \e → msg @l (defer \_ → prt e) e
 
-invalid ∷ ∀ e errs l o t. Row.Cons l e t errs ⇒ IsSymbol l ⇒ Proxy l → (e → String) → e → V (Errors' errs) o
-invalid l prt = Validation.invalid <<< error l prt
+invalid ∷ ∀ e errs @l o t. Row.Cons l e t errs ⇒ IsSymbol l ⇒ (e → String) → e → V (Errors' errs) o
+invalid prt = Validation.invalid <<< error @l prt
 
 -- | Similar to `Variant.on` but on `Msg`.
--- | You can 
+-- | You can
 -- |
 -- | ```
 -- | flattenEnumErr = do
@@ -92,23 +91,23 @@ invalid l prt = Validation.invalid <<< error l prt
 -- | ```
 
 onErr
-  ∷ ∀ proxy sym info b infos_ infos
+  ∷ ∀ @sym info b infos_ infos
   . Row.Cons sym info infos_ infos
   ⇒ IsSymbol sym
-  ⇒ proxy sym
-  → ({ info :: info, msg :: Data.Lazy String } → b)
+  ⇒ ({ info :: info, msg :: Data.Lazy String } → b)
   → (Msg infos_ → b)
   → Msg infos
   → b
-onErr p f g { msg: m, info: r } =
+onErr f g { msg: m, info: r } =
   case coerceV r of
     VariantRep v | v.type == reflectSymbol p → f { info: v.value, msg: m }
     _ → g { msg: m, info: coerceR r }
   where
+  p :: Proxy sym
+  p = Proxy
+
   coerceV ∷ Variant infos → VariantRep info
   coerceV = unsafeCoerce
 
   coerceR ∷ Variant infos → Variant infos_
   coerceR = unsafeCoerce
-
-

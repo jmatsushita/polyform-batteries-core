@@ -8,10 +8,7 @@ import Polyform.Batteries (Dual', Validator')
 import Polyform.Batteries (error) as Batteries
 import Polyform.Dual (dual) as Dual
 import Polyform.Validator (liftFnMaybe) as Validator
-import Type.Proxy (Proxy(..))
 import Type.Row (type (+))
-
-_invalidEnumIndex = Proxy ∷ Proxy "invalidEnumIndex"
 
 type InvalidEnumIndex e
   = ( invalidEnumIndex ∷ Int | e )
@@ -20,15 +17,15 @@ type InvalidEnumIndex e
 -- | the output enum type.
 -- | If the output type is clear in your given context you can
 -- | use `validator'` and skip this `Proxy a` altogether.
-validator ∷ ∀ a err m. Applicative m ⇒ BoundedEnum a ⇒ Proxy a → Validator' m (InvalidEnumIndex + err) Int a
-validator _ = Validator.liftFnMaybe (Batteries.error _invalidEnumIndex (append "Invalid enum index: " <<< show)) (toEnum ∷ Int → Maybe a)
+validator ∷ ∀ @a err m. Applicative m ⇒ BoundedEnum a ⇒ Validator' m (InvalidEnumIndex + err) Int a
+validator = Validator.liftFnMaybe (Batteries.error @"invalidEnumIndex" (append "Invalid enum index: " <<< show)) (toEnum ∷ Int → Maybe a)
 
 -- | If you have clearly typed output passing in a `Proxy a` is redundant.
-validator' ∷ ∀ a err m. Applicative m ⇒ BoundedEnum a ⇒ Validator' m (InvalidEnumIndex + err) Int a
-validator' = validator (Proxy ∷ Proxy a)
+validator' ∷ ∀ @a err m. Applicative m ⇒ BoundedEnum a ⇒ Validator' m (InvalidEnumIndex + err) Int a
+validator' = validator @a
 
-dual ∷ ∀ a err m. Applicative m ⇒ BoundedEnum a ⇒ Proxy a → Dual' m (InvalidEnumIndex + err) Int a
-dual p = Dual.dual (validator p) (pure <<< fromEnum)
+dual ∷ ∀ @a err m. Applicative m ⇒ BoundedEnum a ⇒ Dual' m (InvalidEnumIndex + err) Int a
+dual = Dual.dual (validator @a) (pure <<< fromEnum)
 
-dual' ∷ ∀ a err m. Applicative m ⇒ BoundedEnum a ⇒ Dual' m (InvalidEnumIndex + err) Int a
-dual' = dual (Proxy ∷ Proxy a)
+dual' ∷ ∀ @a err m. Applicative m ⇒ BoundedEnum a ⇒ Dual' m (InvalidEnumIndex + err) Int a
+dual' = dual @a

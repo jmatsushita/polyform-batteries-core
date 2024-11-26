@@ -16,7 +16,6 @@ import Polyform.Data.String (reverseCodeUnits) as String
 import Polyform.Data.String.Regex (escape) as Regex
 import Polyform.Dual (dual) as Dual
 import Polyform.Validator (liftFnMaybe) as Validator
-import Type.Proxy (Proxy(..))
 
 newtype Formatting
   = Formatting
@@ -77,8 +76,6 @@ formatting config =
     in
       format <<< Decimal.toString
 
-_decimal = Proxy ∷ Proxy "decimal"
-
 parse ∷ Formatting → String → Maybe Decimal
 parse (Formatting fmt) = fmt.parse
 
@@ -91,7 +88,7 @@ validator ∷
   Formatting →
   Batteries.Validator' m ( decimal ∷ String | e ) String Decimal
 validator (Formatting { parse: p }) = Validator.liftFnMaybe
-  (Batteries.error _decimal $ append "Expecting a decimal number got: ") p
+  (Batteries.error @"decimal" $ append "Expecting a decimal number got: ") p
 
 dual ∷
   ∀ e m.
